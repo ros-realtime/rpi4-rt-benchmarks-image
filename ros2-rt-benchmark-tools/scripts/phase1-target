@@ -1,0 +1,49 @@
+#!/bin/bash
+
+set -xe
+
+apt-get update
+apt-get install -y ros-$ROS_DISTRO-pendulum-control ros-$ROS_DISTRO-pendulum-msgs
+
+apt update && sudo apt install -y \
+  build-essential \
+  cmake \
+  git \
+  python3-colcon-common-extensions \
+  python3-flake8 \
+  python3-flake8-blind-except \
+  python3-flake8-builtins \
+  python3-flake8-class-newline \
+  python3-flake8-comprehensions \
+  python3-flake8-deprecated \
+  python3-flake8-docstrings \
+  python3-flake8-import-order \
+  python3-flake8-quotes \
+  python3-pip \
+  python3-pytest \
+  python3-pytest-cov \
+  python3-pytest-repeat \
+  python3-pytest-rerunfailures \
+  python3-rosdep \
+  python3-setuptools \
+  python3-vcstool \
+  wget
+
+# init rosdep
+rosdep init
+rosdep update
+
+# install dependencies for reference-system
+python3 -m pip install psrecord bokeh
+
+mkdir -p /tmp/ros2_rt_benchmarks_ws/src
+cd /tmp/ros2_rt_benchmarks_ws/src || exit 1
+git clone https://gitlab.com/ApexAI/performance_test.git
+git clone https://github.com/ros-realtime/reference-system
+cd .. || exit 1
+rosdep install --from-paths src --ignore-src -y --skip-keys "fastcdr rti-connext-dds-6.0.1 urdfdom_headers"
+
+# build tools
+source /opt/ros/$ROS_DISTRO/setup.bash
+mkdir -p /opt/ros/$ROS_DISTRO-rt-tools
+colcon build --cmake-force-configure --cmake-args -DRUN_BENCHMARK=ON --install-base /opt/ros/$ROS_DISTRO-rt-tools
